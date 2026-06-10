@@ -206,8 +206,8 @@ input, select {
   border: 1px solid var(--border-color);
 }
 
-#signatureCanvas {
- border: 2px solid var(--border-color);
+.sig-canvas {
+  border: 2px solid var(--border-color);
   display: block;
   margin: 15px auto;
   touch-action: none;
@@ -215,10 +215,9 @@ input, select {
   cursor: crosshair;
   width: 100%;
   max-width: 100%;
-  height: 150px;
+  height: 200px;
   border-radius: 6px;
 }
-
 
 .signature-section {
   overflow-x: hidden;
@@ -397,6 +396,157 @@ body.dark-mode .info-box {
   font-size: 14px;
 }
 
+.print-view {
+  display: none;
+  position: fixed;
+  z-index: 1001;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  overflow: auto;
+  padding: 30px;
+}
+
+.print-view.active {
+  display: block;
+}
+
+.print-view-content {
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+.print-view-header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #000;
+  padding-bottom: 15px;
+}
+
+.print-view-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+}
+
+.print-entry-item {
+  display: block;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ccc;
+  page-break-inside: avoid;
+}
+
+.print-entry-item:last-child {
+  border-bottom: none;
+}
+
+.print-entry-date {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.print-entry-detail {
+  font-size: 14px;
+  margin: 3px 0;
+  color: #333;
+}
+
+.print-entry-hours {
+  font-weight: bold;
+  font-size: 15px;
+  color: #2196F3;
+}
+
+.print-week-total {
+  text-align: right;
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #000;
+}
+
+.print-week-header {
+  background-color: #f0f0f0;
+  padding: 12px;
+  margin: 25px 0 15px 0;
+  border-left: 4px solid #2196F3;
+  font-weight: bold;
+  font-size: 16px;
+  page-break-inside: avoid;
+}
+
+.print-supervisor-info {
+  background-color: #f9f9f9;
+  padding: 12px;
+  margin: 15px 0;
+  border-left: 4px solid #4CAF50;
+  font-size: 13px;
+  page-break-inside: avoid;
+}
+
+.print-supervisor-sig {
+  margin-top: 10px;
+  text-align: center;
+  border-top: 1px solid #ccc;
+  padding-top: 10px;
+}
+
+.print-supervisor-sig img {
+  max-width: 200px;
+  height: auto;
+  border: 1px solid #ccc;
+  padding: 5px;
+}
+
+.print-grand-total {
+  text-align: right;
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 3px solid #000;
+  border-bottom: 3px solid #000;
+  padding-bottom: 20px;
+}
+
+.print-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.print-controls button {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 12px;
+  min-height: 44px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+.print-controls button:hover {
+  background-color: #45a049;
+}
+
+.print-controls button.close-btn {
+  background-color: #f44336;
+}
+
+.print-controls button.close-btn:hover {
+  background-color: #da190b;
+}
+
 @media print {
   body {
     padding: 0;
@@ -409,6 +559,10 @@ body.dark-mode .info-box {
     border: none;
     padding: 0;
     margin: 0;
+  }
+  .print-view {
+    position: static;
+    padding: 0;
   }
 }
 
@@ -423,9 +577,9 @@ body.dark-mode .info-box {
     min-width: auto;
   }
   
-  #signatureCanvas {
-    height: 120px;
-    max-width: 350px;
+  .sig-canvas {
+    height: 150px;
+    max-width: 400px;
   }
   
   .week-selector button {
@@ -457,6 +611,7 @@ body.dark-mode .info-box {
 <div class="header-controls">
   <button id="darkModeBtn" type="button">🌙 Dark</button>
   <button id="exportBtn" type="button">📥 Export</button>
+  <button id="printReportBtn" type="button">📋 Print Report</button>
   <button id="resetBtn" type="button">🔄 Reset</button>
 </div>
 
@@ -504,6 +659,17 @@ body.dark-mode .info-box {
 
 <!-- Weekly Entries Display -->
 <div id="weeksList"></div>
+
+<!-- PRINT VIEW MODAL -->
+<div id="printView" class="print-view">
+  <div class="print-view-content">
+    <div class="print-controls">
+      <button onclick="window.print()" type="button">🖨️ Print</button>
+      <button class="close-btn" onclick="closePrintView()" type="button">❌ Close</button>
+    </div>
+    <div id="printContent"></div>
+  </div>
+</div>
 
 <!-- EDIT MODAL -->
 <div id="editModal" class="edit-modal">
@@ -616,6 +782,91 @@ document.getElementById("exportBtn").onclick = function () {
   
   showStatus("CSV exported successfully", "success");
 };
+
+// ✅ PRINT FULL REPORT WITH ALL WEEKS
+document.getElementById("printReportBtn").onclick = function () {
+  if (entries.length === 0) {
+    showStatus("No entries to print", "error");
+    return;
+  }
+  
+  openPrintView();
+};
+
+// ✅ CLOSE PRINT VIEW
+function closePrintView() {
+  document.getElementById("printView").classList.remove("active");
+}
+
+// ✅ OPEN PRINT VIEW WITH ALL WEEKS
+function openPrintView() {
+  const printContent = document.getElementById("printContent");
+  const allWeeks = getAllWeeks();
+  
+  let html = `
+    <div class="print-view-header">
+      <h2>Cabling Logbook Report</h2>
+      <p>Employee: ${document.getElementById("name").value || "N/A"}</p>
+      <p>Employer: ${document.getElementById("employer").value || "N/A"}</p>
+      <p>Report Generated: ${new Date().toLocaleDateString()}</p>
+    </div>
+  `;
+  
+  let grandTotal = 0;
+  
+  allWeeks.forEach(weekStart => {
+    const weekEnd = getWeekEnd(weekStart);
+    const weekEntries = getWeekEntries(weekStart);
+    const sigData = weeklySignatures[weekStart] || {};
+    let weekTotal = 0;
+    
+    weekEntries.forEach(e => {
+      weekTotal += e.hours;
+      grandTotal += e.hours;
+    });
+    
+    html += `<div class="print-week-header">Week: ${weekStart} to ${weekEnd}</div>`;
+    
+    weekEntries.forEach(e => {
+      html += `
+        <div class="print-entry-item">
+          <div class="print-entry-date">${e.date}</div>
+          <div class="print-entry-detail"><strong>Job:</strong> ${e.job}</div>
+          <div class="print-entry-detail"><strong>Work:</strong> ${e.work}</div>
+          <div class="print-entry-detail"><strong>Cable:</strong> ${e.cable}</div>
+          <div class="print-entry-detail"><strong>Task:</strong> ${e.task}</div>
+          <div class="print-entry-hours">Hours: ${e.hours}</div>
+        </div>
+      `;
+    });
+    
+    html += `<div class="print-week-total">Week Total: ${weekTotal} hours</div>`;
+    
+    // Add supervisor signature info if available
+    if (sigData.supervisorName) {
+      html += `
+        <div class="print-supervisor-info">
+          <strong>✅ Signed Off</strong><br>
+          <strong>Supervisor:</strong> ${sigData.supervisorName}<br>
+          <strong>Licence Number:</strong> ${sigData.licenceNumber}<br>
+          <strong>Date Signed:</strong> ${new Date(sigData.date).toLocaleDateString()}
+      `;
+      if (sigData.signature) {
+        html += `
+          <div class="print-supervisor-sig">
+            <img src="${sigData.signature}" alt="Supervisor Signature">
+          </div>
+        `;
+      }
+      html += `</div>`;
+    }
+  });
+  
+  html += `<div class="print-grand-total">TOTAL HOURS: ${grandTotal}</div>`;
+  
+  printContent.innerHTML = html;
+  document.getElementById("printView").classList.add("active");
+}
 
 // ✅ RESET ALL DATA
 document.getElementById("resetBtn").onclick = function () {
@@ -884,7 +1135,7 @@ function renderWeeksList() {
     editBtn.onclick = () => openEditModal(globalIndex);
     
     const deleteBtn = document.createElement("button");
-    deleteBtn.textContent = "❌ Delete";
+    deleteBtn.textContent = "🗑️ Delete";
     deleteBtn.onclick = () => deleteEntry(globalIndex);
     
     buttonsDiv.appendChild(editBtn);
@@ -897,28 +1148,26 @@ function renderWeeksList() {
 
   // Supervisor sign-off section
   if (isSigned) {
-    // Show signed supervisor info
     const signedDiv = document.createElement("div");
     signedDiv.className = "supervisor-info signed";
     signedDiv.innerHTML = `
       <div class="supervisor-name">✅ Supervisor: ${sigData.supervisorName}</div>
-      <div>Licence: ${sigData.licenceNumber}</div>
-      <div><small>Signed: ${new Date(sigData.date).toLocaleString()}</small></div>
+      <div>Licence Number: ${sigData.licenceNumber}</div>
+      <div><small>Signed: ${new Date(sigData.date).toLocaleDateString()}</small></div>
       <div class="signature-display">
         <img src="${sigData.signature}" alt="Supervisor Signature">
       </div>
     `;
     weekSection.appendChild(signedDiv);
   } else {
-   // Show signature input form
     const sigSection = document.createElement("div");
     sigSection.className = "signature-section";
     sigSection.innerHTML = `
-      <h3>✍️ Supervisor Sign-Off</h3>
+      <h3>✏️ Supervisor Sign-Off</h3>
       <input id="sup-name-${currentWeek}" placeholder="Supervisor Name" type="text" value="">
       <input id="sup-licence-${currentWeek}" placeholder="Licence Number" type="text" value="">
       <p><b>Signature:</b></p>
-      <canvas id="sig-canvas-${currentWeek}" class="sig-canvas"></canvas></canvas>
+      <canvas id="sig-canvas-${currentWeek}" class="sig-canvas"></canvas>
       <div class="button-group">
         <button onclick="clearSignature('${currentWeek}')" type="button">🔄 Clear</button>
         <button onclick="saveSignature('${currentWeek}')" type="button">✅ Save Sig</button>
@@ -927,17 +1176,6 @@ function renderWeeksList() {
     `;
     weekSection.appendChild(sigSection);
   }
-
-  // Action buttons - View for Print only
-  const actionDiv = document.createElement("div");
-  actionDiv.className = "action-buttons";
-  
-  const viewBtn = document.createElement("button");
-  viewBtn.textContent = "👁️ View for Print";
-  viewBtn.onclick = () => generatePrintContent(currentWeek);
-  
-  actionDiv.appendChild(viewBtn);
-  weekSection.appendChild(actionDiv);
 
   weeksList.appendChild(weekSection);
 
@@ -957,48 +1195,67 @@ function setupCanvas(weekStart, existingSignature) {
   if (!canvas) return;
 
   const ctx = canvas.getContext("2d");
-  const rect = canvas.getBoundingClientRect();
+  
+  // Get the display size of the canvas
+  const style = window.getComputedStyle(canvas);
+  const displayWidth = parseInt(style.width);
+  const displayHeight = parseInt(style.height);
+  
+  // Set the canvas resolution to match display size
   const dpr = window.devicePixelRatio || 1;
-
-  // ✅ Fix scaling issue
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+  canvas.width = displayWidth * dpr;
+  canvas.height = displayHeight * dpr;
+  
+  // Scale context to match device pixel ratio
   ctx.scale(dpr, dpr);
-
+  
+  // Set drawing styles
   ctx.lineWidth = 2;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  ctx.strokeStyle = "#000000";
 
   canvasState[weekStart] = {
     canvas,
     ctx,
     isDrawing: false,
+    dpr: dpr,
+    displayWidth: displayWidth,
+    displayHeight: displayHeight,
     signatureImage: existingSignature || null
   };
 
-  function startDrawing(e) {
-    canvasState[weekStart].isDrawing = true;
+  function getCoordinates(e) {
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  function startDrawing(e) {
+    e.preventDefault();
+    canvasState[weekStart].isDrawing = true;
+    const coords = getCoordinates(e);
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(coords.x, coords.y);
   }
 
   function draw(e) {
-    if (!canvasState[weekStart].isDrawing) return;
     e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
-    ctx.lineTo(x, y);
+    if (!canvasState[weekStart].isDrawing) return;
+    const coords = getCoordinates(e);
+    ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
   }
 
-  function stopDrawing() {
+  function stopDrawing(e) {
+    e.preventDefault();
     canvasState[weekStart].isDrawing = false;
+    ctx.closePath();
   }
 
   canvas.addEventListener("mousedown", startDrawing);
@@ -1006,118 +1263,48 @@ function setupCanvas(weekStart, existingSignature) {
   canvas.addEventListener("mouseup", stopDrawing);
   canvas.addEventListener("mouseout", stopDrawing);
 
-  canvas.addEventListener("touchstart", (e) => { e.preventDefault(); startDrawing(e); });
-  canvas.addEventListener("touchmove", (e) => { e.preventDefault(); draw(e); });
-  canvas.addEventListener("touchend", () => stopDrawing());
+  canvas.addEventListener("touchstart", startDrawing);
+  canvas.addEventListener("touchmove", draw);
+  canvas.addEventListener("touchend", stopDrawing);
 }
-``
 
 function clearSignature(weekStart) {
-  if (!canvasState[weekStart]) return;
-  const { canvas, ctx } = canvasState[weekStart];
+  const canvas = document.getElementById(`sig-canvas-${weekStart}`);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvasState[weekStart].signatureImage = null;
-  document.getElementById(`sig-status-${weekStart}`).innerText = "";
+  document.getElementById(`sig-status-${weekStart}`).innerHTML = "";
 }
 
 function saveSignature(weekStart) {
-  const supervisorName = document.getElementById(`sup-name-${weekStart}`).value.trim();
-  const licenceNumber = document.getElementById(`sup-licence-${weekStart}`).value.trim();
+  const supName = document.getElementById(`sup-name-${weekStart}`).value;
+  const supLicence = document.getElementById(`sup-licence-${weekStart}`).value;
+  const canvas = document.getElementById(`sig-canvas-${weekStart}`);
 
-  if (!supervisorName || !licenceNumber) {
-    alert("Please enter Supervisor Name and Licence Number");
+  if (!supName || !supLicence) {
+    showStatus("Please enter supervisor name and licence number", "error");
     return;
   }
 
-  if (!canvasState[weekStart]) return;
-  const canvas = canvasState[weekStart].canvas;
+  // Check if signature has been drawn
+  const canvasData = canvas.toDataURL();
+  const blankCanvas = document.createElement("canvas");
+  blankCanvas.width = canvas.width;
+  blankCanvas.height = canvas.height;
   
-  // Check if signature was drawn
-  const imageData = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
-  let hasDrawing = false;
-  for (let i = 3; i < imageData.length; i += 4) {
-    if (imageData[i] > 128) {
-      hasDrawing = true;
-      break;
-    }
-  }
-
-  if (!hasDrawing) {
-    alert("Please draw a signature before saving");
+  if (canvasData === blankCanvas.toDataURL()) {
+    showStatus("Please draw a signature", "error");
     return;
   }
 
-  const signatureImage = canvas.toDataURL("image/png");
-  saveWeeklySignature(weekStart, supervisorName, licenceNumber, signatureImage);
+  saveWeeklySignature(weekStart, supName, supLicence, canvasData);
   render();
   showStatus("Signature saved successfully", "success");
-}
-
-function generatePrintContent(weekStart) {
-  const weekEnd = getWeekEnd(weekStart);
-  const weekEntries = getWeekEntries(weekStart);
-  const sigData = weeklySignatures[weekStart] || {};
-
-  let total = 0;
-  let weekTotal = 0;
-  entries.forEach(e => total += e.hours);
-  weekEntries.forEach(e => weekTotal += e.hours);
-
-  let rows = "";
-  weekEntries.forEach(e => {
-    rows += "<tr>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.date + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.job + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.work + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.cable + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.task + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.hours + "</td>" +
-      "</tr>";
-  });
-
-  let content =
-    "<html><head><meta charset='UTF-8'><title>Cabling Logbook</title><style>@media print { .print-controls { display: none !important; } }</style></head>" +
-    "<body style='font-family:Arial;padding:30px'>" +
-    "<div class='print-controls' style='margin-bottom:20px;'>" +
-    "<button onclick='window.print()' style='padding:12px 24px;font-size:16px;cursor:pointer;'>🖨️ Print</button> " +
-    "<button onclick='window.close()' style='padding:12px 24px;font-size:16px;cursor:pointer;'>❌ Close</button>" +
-    "</div>" +
-    "<h1 style='text-align:center'>CABLING LOGBOOK</h1>" +
-    "<p><b>Name:</b> " + document.getElementById("name").value + "</p>" +
-    "<p><b>Employer:</b> " + document.getElementById("employer").value + "</p>" +
-    "<p><b>Week:</b> " + weekStart + " to " + weekEnd + "</p>" +
-    "<h3>Total Hours: " + total + " / 360</h3>" +
-    "<h3>Week Hours: " + weekTotal + "</h3>" +
-    "<h3>Work Log</h3>" +
-    "<table style='width:100%;border-collapse:collapse;'>" +
-    "<tr style='background-color:#f0f0f0;'><th style='border: 1px solid #000; padding: 8px;'>Date</th><th style='border: 1px solid #000; padding: 8px;'>Job</th><th style='border: 1px solid #000; padding: 8px;'>Work</th><th style='border: 1px solid #000; padding: 8px;'>Cable</th><th style='border: 1px solid #000; padding: 8px;'>Task</th><th style='border: 1px solid #000; padding: 8px;'>Hours</th></tr>" +
-    rows +
-    "</table>" +
-    "<br><hr><br>" +
-    "<h3>Weekly Sign-Off</h3>";
-
-  if (sigData.signature) {
-    content += "<p><b>Supervisor:</b> " + sigData.supervisorName + "</p>" +
-      "<p><b>Licence Number:</b> " + sigData.licenceNumber + "</p>" +
-      "<p><b>Signature:</b></p>" +
-      "<img src='" + sigData.signature + "' style='max-width:300px;height:auto;border:1px solid #000;'>" +
-      "<p><small>Signed: " + new Date(sigData.date).toLocaleString() + "</small></p>";
-  } else {
-    content += "<p>Supervisor Name: __________</p>" +
-      "<p>Licence Number: __________</p>" +
-      "<p>Signature:</p>" +
-      "<div style='border:1px solid black;height:80px;width:250px'></div>";
-  }
-
-  content += "<br><p style='text-align:center;'><b>Use Print button above or Ctrl+P to save as PDF</b></p>" +
-    "</body></html>";
-
-  const w = window.open("");
-  w.document.write(content);
-  w.document.close();
 }
 
 </script>
 
 </body>
 </html>
+
